@@ -1,1 +1,0 @@
-/home/mansha/delivery_bot_ws/build/my_bot/ament_cmake_core/my_botConfig.cmake
