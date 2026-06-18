@@ -17,6 +17,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -50,7 +51,10 @@ install(PROGRAMS
   src/multi_goal_nav.py
   my_bot/imu_odom.py
   my_bot/move_robot.py
+  my_bot/voice_listener.py
+  my_bot_voice/main.py
   DESTINATION lib/${PROJECT_NAME}
 )
-
+ament_python_install_package(my_bot)
+ament_python_install_package(my_bot_voice)
 ament_package()
