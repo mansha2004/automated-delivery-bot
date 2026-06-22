@@ -3,13 +3,22 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-from geometry_msgs.msg import Twist
-import time
+
+from nav2_simple_commander.robot_navigator import BasicNavigator
+from geometry_msgs.msg import PoseStamped
 
 
 class VoiceNavBridge(Node):
+
     def __init__(self):
         super().__init__('voice_nav_bridge')
+
+        self.navigator = BasicNavigator()
+
+        self.locations = {
+            "medical_station": (0.0, 0.0),
+            "room_301": (1.5, 1.0),
+        }
 
         self.sub = self.create_subscription(
             String,
@@ -18,58 +27,52 @@ class VoiceNavBridge(Node):
             10
         )
 
-        self.pub = self.create_publisher(
-            Twist,
-            '/cmd_vel',
-            10
+        self.get_logger().info("Voice Nav Bridge Ready")
+
+    def go_to(self, x, y):
+
+        goal = PoseStamped()
+        goal.header.frame_id = 'map'
+        goal.header.stamp = self.get_clock().now().to_msg()
+
+        goal.pose.position.x = x
+        goal.pose.position.y = y
+        goal.pose.orientation.w = 1.0
+
+        self.get_logger().info(
+            f"Navigating to ({x}, {y})"
         )
 
-    def callback(self, msg):   # ✅ NOW INSIDE CLASS
-        command = msg.data.lower()
-        twist = Twist()
+        self.navigator.goToPose(goal)
 
-        print(f"Received: {command}")
+    def callback(self, msg):
 
-        # 🛑 STOP
-        if "stop" in command:
-            twist.linear.x = 0.0
-            twist.angular.z = 0.0
+        command = msg.data.strip().lower()
 
-        # 🚀 FORWARD
-        elif "forward" in command or "go" in command or "room" in command:
-            twist.linear.x = 0.5
-            twist.angular.z = 0.0
+        self.get_logger().info(
+            f"Received: {command}"
+        )
 
-        # ↩ LEFT
-        elif "left" in command:
-            twist.linear.x = 0.2
-            twist.angular.z = 0.5
+        if command in self.locations:
 
-        # ↪ RIGHT
-        elif "right" in command:
-            twist.linear.x = 0.2
-            twist.angular.z = -0.5
+            x, y = self.locations[command]
+
+            self.go_to(x, y)
 
         else:
-            self.get_logger().info(f"Unknown command: {command}")
-            return
-
-        # 🚀 PUBLISH
-        self.pub.publish(twist)
-        self.get_logger().info(f"Executing: {command}")
-
-        # ⏱ MOVE LONGER (VISIBLE IN RViz)
-        time.sleep(2)
-
-        # 🛑 STOP AFTER MOTION
-        stop_twist = Twist()
-        self.pub.publish(stop_twist)
+            self.get_logger().warn(
+                f"Unknown location: {command}"
+            )
 
 
-def main():
-    rclpy.init()
+def main(args=None):
+
+    rclpy.init(args=args)
+
     node = VoiceNavBridge()
+
     rclpy.spin(node)
+
     node.destroy_node()
     rclpy.shutdown()
 
