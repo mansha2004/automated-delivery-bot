@@ -24,7 +24,7 @@
       <material name="blue"/>
     </visual>
 <inertial>
-  <origin xyz="0 0 -0.03"/>
+  <origin xyz="0 0 -0.08"/>
   <mass value="3.0"/>
   <inertia ixx="0.05" iyy="0.05" izz="0.05"
            ixy="0.0" ixz="0.0" iyz="0.0"/>
