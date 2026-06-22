@@ -7,6 +7,9 @@ from std_msgs.msg import String
 from nav2_simple_commander.robot_navigator import BasicNavigator
 from geometry_msgs.msg import PoseStamped
 
+import yaml
+import os
+import math
 
 class VoiceNavBridge(Node):
 
@@ -15,10 +18,16 @@ class VoiceNavBridge(Node):
 
         self.navigator = BasicNavigator()
 
-        self.locations = {
-            "medical_station": (0.0, 0.0),
-            "room_301": (1.5, 1.0),
-        }
+        config_file = os.path.expanduser(
+            "~/automated-delivery-bot/src/my_bot/config/locations.yaml"
+        )
+
+        with open(config_file, "r") as file:
+            self.locations = yaml.safe_load(file)
+
+        self.get_logger().info(
+            f"Loaded {len(self.locations)} locations"
+        )
 
         self.sub = self.create_subscription(
             String,
@@ -29,7 +38,7 @@ class VoiceNavBridge(Node):
 
         self.get_logger().info("Voice Nav Bridge Ready")
 
-    def go_to(self, x, y):
+    def go_to(self, x, y,yaw):
 
         goal = PoseStamped()
         goal.header.frame_id = 'map'
@@ -37,8 +46,11 @@ class VoiceNavBridge(Node):
 
         goal.pose.position.x = x
         goal.pose.position.y = y
-        goal.pose.orientation.w = 1.0
 
+        import math
+
+        goal.pose.orientation.z = math.sin(yaw / 2.0)
+        goal.pose.orientation.w = math.cos(yaw / 2.0)
         self.get_logger().info(
             f"Navigating to ({x}, {y})"
         )
@@ -55,16 +67,18 @@ class VoiceNavBridge(Node):
 
         if command in self.locations:
 
-            x, y = self.locations[command]
+            location = self.locations[command]
 
-            self.go_to(x, y)
+            x = float(location["x"])
+            y = float(location["y"])
+            yaw=float(location["yaw"])
+
+            self.go_to(x, y,yaw)
 
         else:
             self.get_logger().warn(
                 f"Unknown location: {command}"
             )
-
-
 def main(args=None):
 
     rclpy.init(args=args)
